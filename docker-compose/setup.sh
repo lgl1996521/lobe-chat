@@ -531,10 +531,16 @@ section_configurate_host() {
     
     # If user not specify host, try to get the server ip
     if [ -z "$HOST" ]; then
-        HOST=$(hostname -I | awk '{print $1}')
-        # If the host is a private ip and the deploy mode is port mode
-        if [[ "$DEPLOY_MODE" == "1" ]] && ([[ "$HOST" == "192.168."* ]] || [[ "$HOST" == "172."* ]] || [[ "$HOST" == "10."* ]]); then
-            echo $(show_message "tips_private_ip_detected")
+        # 使用兼容Alpine的IP获取方式
+        HOST=$(ip -o -4 addr show scope global | awk '{print $4}' | cut -d/ -f1 | head -n1)
+        
+        # 修复条件判断语法
+        if [ "$DEPLOY_MODE" = "1" ] && { 
+            [ "$(echo "$HOST" | cut -d. -f1)" = "192" ] && [ "$(echo "$HOST" | cut -d. -f2)" = "168" ] ||
+            [ "$(echo "$HOST" | cut -d. -f1)" = "172" ] && [ "$(echo "$HOST" | cut -d. -f2)" -ge 16 ] && [ "$(echo "$HOST" | cut -d. -f2)" -le 31 ] ||
+            [ "$(echo "$HOST" | cut -d. -f1)" = "10" ]; 
+        }; then
+            echo "$(show_message "tips_private_ip_detected")"
         fi
     fi
     
